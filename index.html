@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="pt-BR" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FinançasPro — Gestão Financeira</title>
+  <meta name="description" content="Sistema de gestão financeira pessoal">
+  <link rel="stylesheet" href="css/style.css">
+  <!-- Supabase CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+
+<!-- ════════ TOAST CONTAINER ════════ -->
+<div id="toast-container"></div>
+
+<!-- ════════ AUTH SCREEN ════════ -->
+<div id="auth-screen">
+  <div class="auth-box">
+    <div class="auth-logo">
+      <h1>Finanças<span>Pro</span></h1>
+      <p>Sistema de gestão financeira pessoal</p>
+    </div>
+    <div id="auth-error" class="auth-error"></div>
+    <div class="form-group" style="margin-bottom:16px">
+      <label>E-mail</label>
+      <input type="email" id="auth-email" placeholder="seu@email.com" autocomplete="email">
+    </div>
+    <div class="form-group" style="margin-bottom:24px">
+      <label>Senha</label>
+      <input type="password" id="auth-password" placeholder="••••••••" autocomplete="current-password">
+    </div>
+    <button class="btn btn-primary btn-full btn-lg" id="btn-login" onclick="handleLogin()">Entrar</button>
+    <p style="text-align:center;margin-top:20px;font-size:.8rem;color:var(--text-muted)">
+      Acesso restrito a usuários autorizados
+    </p>
+  </div>
+</div>
+
+<!-- ════════ SIDEBAR OVERLAY (mobile) ════════ -->
+<div id="sidebar-overlay" onclick="Utils.closeSidebar()"></div>
+
+<!-- ════════ SIDEBAR ════════ -->
+<nav id="sidebar">
+  <div class="sidebar-header">
+    <div class="sidebar-logo">Finanças<span>Pro</span></div>
+    <div class="sidebar-user" id="sidebar-user-email">—</div>
+  </div>
+
+  <div class="sidebar-nav">
+    <div class="nav-section-label">Geral</div>
+    <button class="nav-item active" data-page="overview" onclick="App.navigate('overview', this)">
+      <span class="icon">🏠</span> Visão Geral
+    </button>
+
+    <div class="nav-section-label">Financeiro</div>
+    <button class="nav-item" data-page="contas" onclick="App.navigate('contas', this)">
+      <span class="icon">📋</span> Contas a Pagar
+      <span class="nav-badge hidden" id="badge-atrasadas">0</span>
+    </button>
+    <button class="nav-item" data-page="fixas" onclick="App.navigate('fixas', this)">
+      <span class="icon">🔄</span> Contas Fixas
+    </button>
+    <button class="nav-item" data-page="cartoes" onclick="App.navigate('cartoes', this)">
+      <span class="icon">💳</span> Cartões
+    </button>
+    <button class="nav-item" data-page="emprestimos" onclick="App.navigate('emprestimos', this)">
+      <span class="icon">🏦</span> Empréstimos
+    </button>
+
+    <div class="nav-section-label">Benefícios</div>
+    <button class="nav-item" data-page="vr" onclick="App.navigate('vr', this)">
+      <span class="icon">🍽️</span> Vale Refeição
+    </button>
+  </div>
+
+  <div class="sidebar-footer">
+    <button class="btn btn-ghost btn-icon" id="theme-toggle" onclick="Utils.toggleTheme()" title="Alternar tema">☀</button>
+    <button class="btn btn-ghost btn-sm" style="flex:1" onclick="Auth.logout()">↩ Sair</button>
+  </div>
+</nav>
+
+<!-- ════════ APP SHELL ════════ -->
+<div id="app">
+  <!-- Mobile header -->
+  <div class="mobile-header">
+    <div class="mobile-logo">Finanças<span>Pro</span></div>
+    <button class="btn btn-ghost btn-icon" onclick="Utils.toggleSidebar()">☰</button>
+  </div>
+
+  <!-- Page header -->
+  <div class="page-header">
+    <div>
+      <div class="page-title" id="page-title">Visão Geral</div>
+      <div class="page-subtitle" id="page-subtitle">Resumo do mês atual</div>
+    </div>
+  </div>
+
+  <!-- Page content -->
+  <div class="page-content">
+    <div id="page-content">
+      <!-- Rendered by Pages.js -->
+    </div>
+  </div>
+</div>
+
+<!-- ════════ SCRIPTS ════════ -->
+<script src="js/config.js"></script>
+<script src="js/utils.js"></script>
+<script src="js/db-models.js"></script>
+<script src="js/pages.js"></script>
+<script>
+// ════════════════════════════════════════════════════════════
+//  app.js — Inicialização e navegação principal
+// ════════════════════════════════════════════════════════════
+
+const PAGE_META = {
+  overview:    { title: 'Visão Geral',       subtitle: 'Resumo financeiro do mês atual' },
+  contas:      { title: 'Contas a Pagar',    subtitle: 'Gerencie suas contas e vencimentos' },
+  fixas:       { title: 'Contas Fixas',      subtitle: 'Recorrências mensais automáticas' },
+  cartoes:     { title: 'Cartões de Crédito',subtitle: 'Faturas, compras e limites' },
+  emprestimos: { title: 'Empréstimos',       subtitle: 'Acompanhe parcelas e saldo devedor' },
+  vr:          { title: 'Vale Refeição',     subtitle: 'Controle independente do saldo VR' }
+};
+
+const App = {
+  currentPage: 'overview',
+
+  async init() {
+    Utils.initTheme();
+    const loggedIn = await Auth.init();
+    if (loggedIn) {
+      this.showApp();
+    } else {
+      document.getElementById('auth-screen').style.display = 'flex';
+    }
+  },
+
+  showApp() {
+    document.getElementById('auth-screen').style.display = 'none';
+    document.getElementById('app').classList.add('visible');
+    document.getElementById('sidebar-user-email').textContent = Auth.getUserEmail();
+    this.navigate('overview');
+    this.checkAtrasadas();
+  },
+
+  async navigate(page, btnEl = null) {
+    this.currentPage = page;
+    const meta = PAGE_META[page] || {};
+    document.getElementById('page-title').textContent = meta.title || page;
+    document.getElementById('page-subtitle').textContent = meta.subtitle || '';
+
+    // Update nav active state
+    document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
+    if (btnEl) btnEl.classList.add('active');
+    else {
+      const btn = document.querySelector(`.nav-item[data-page="${page}"]`);
+      if (btn) btn.classList.add('active');
+    }
+
+    // Close mobile sidebar
+    Utils.closeSidebar();
+
+    // Render page
+    const content = document.getElementById('page-content');
+    content.innerHTML = `<div style="padding:40px;text-align:center;color:var(--text-muted)">Carregando...</div>`;
+
+    try {
+      switch(page) {
+        case 'overview':    await Pages.renderOverview(); break;
+        case 'contas':      await Pages.renderContas(); break;
+        case 'fixas':       await Pages.renderContasFixas(); break;
+        case 'cartoes':     await Pages.renderCartoes(); break;
+        case 'emprestimos': await Pages.renderEmprestimos(); break;
+        case 'vr':          await Pages.renderVR(); break;
+      }
+    } catch(e) {
+      content.innerHTML = `
+        <div class="alert-banner red">
+          <strong>Erro ao carregar a página:</strong> ${e.message}
+          <br><small style="margin-top:4px;display:block">Verifique as configurações do Supabase em js/config.js</small>
+        </div>`;
+      console.error(e);
+    }
+  },
+
+  async checkAtrasadas() {
+    try {
+      const hoje = new Date().toISOString().split('T')[0];
+      const { data } = await db.from('contas').select('id').eq('status', 'pendente').lt('data_vencimento', hoje);
+      const badge = document.getElementById('badge-atrasadas');
+      if (data?.length > 0) {
+        badge.textContent = data.length;
+        badge.classList.remove('hidden');
+      }
+    } catch(e) {}
+  }
+};
+
+// ── AUTH HANDLER ────────────────────────────────────────────
+async function handleLogin() {
+  const email = document.getElementById('auth-email').value.trim();
+  const password = document.getElementById('auth-password').value;
+  const btn = document.getElementById('btn-login');
+  const errEl = document.getElementById('auth-error');
+  errEl.style.display = 'none';
+  btn.textContent = 'Entrando...'; btn.disabled = true;
+  try {
+    await Auth.login(email, password);
+    App.showApp();
+  } catch(e) {
+    errEl.textContent = e.message.includes('Invalid login') ? 'E-mail ou senha incorretos.' : e.message;
+    errEl.style.display = 'block';
+  } finally {
+    btn.textContent = 'Entrar'; btn.disabled = false;
+  }
+}
+
+// Enter key on login
+document.getElementById('auth-password')?.addEventListener('keydown', e => {
+  if (e.key === 'Enter') handleLogin();
+});
+
+// ── INICIALIZAÇÃO ────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', () => App.init());
+</script>
+</body>
+</html>
