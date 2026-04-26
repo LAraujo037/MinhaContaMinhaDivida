@@ -2,6 +2,10 @@
 //  db-models.js — Todas as operações de banco de dados
 // ════════════════════════════════════════════════════════════
 
+function ultimoDiaMes(ano, mes) {
+  return new Date(parseInt(ano), parseInt(mes), 0).getDate();
+}
+
 const DB = {
 
   // ── CONTAS A PAGAR ──────────────────────────────────────
@@ -11,7 +15,7 @@ const DB = {
       if (filters.mes) {
         const [ano, mes] = filters.mes.split('-');
         const inicio = `${ano}-${mes}-01`;
-        const fim = `${ano}-${mes}-31`;
+        const fim = `${ano}-${mes}-${ultimoDiaMes(ano, mes)}`;
         q = q.gte('data_vencimento', inicio).lte('data_vencimento', fim);
       }
       if (filters.status && filters.status !== 'todos') {
@@ -91,10 +95,11 @@ const DB = {
         // Verifica se já existe lançamento este mês
         const dia = String(f.dia_vencimento).padStart(2, '0');
         const data = `${ano}-${String(mes).padStart(2,'0')}-${dia}`;
+        const mesPad = String(mes).padStart(2,'0');
         const { data: exist } = await db.from('contas')
           .select('id').eq('conta_fixa_id', f.id)
-          .gte('data_vencimento', `${ano}-${String(mes).padStart(2,'0')}-01`)
-          .lte('data_vencimento', `${ano}-${String(mes).padStart(2,'0')}-31`)
+          .gte('data_vencimento', `${ano}-${mesPad}-01`)
+          .lte('data_vencimento', `${ano}-${mesPad}-${ultimoDiaMes(ano, mes)}`)
           .maybeSingle();
         if (!exist) {
           novas.push({
@@ -162,8 +167,9 @@ const DB = {
     // Retorna todas as parcelas que vencem em determinado mês/cartão
     async getFatura(cartaoId, anoMes) {
       const [ano, mes] = anoMes.split('-');
-      const inicio = `${ano}-${String(mes).padStart(2,'0')}-01`;
-      const fim = `${ano}-${String(mes).padStart(2,'0')}-31`;
+      const mesPad = String(mes).padStart(2,'0');
+      const inicio = `${ano}-${mesPad}-01`;
+      const fim = `${ano}-${mesPad}-${ultimoDiaMes(ano, mes)}`;
       const { data, error } = await db.from('parcelas_cartao')
         .select('*, compras_cartao(descricao, cartao_id, total_parcelas)')
         .eq('cartao_id', cartaoId)
@@ -304,8 +310,9 @@ const DB = {
   // ── RESUMO GERAL ────────────────────────────────────────
   async getResumo(anoMes) {
     const [ano, mes] = anoMes.split('-');
-    const inicio = `${ano}-${String(mes).padStart(2,'0')}-01`;
-    const fim = `${ano}-${String(mes).padStart(2,'0')}-31`;
+    const mesPad = String(mes).padStart(2,'0');
+    const inicio = `${ano}-${mesPad}-01`;
+    const fim = `${ano}-${mesPad}-${ultimoDiaMes(ano, mes)}`;
 
     // Contas do mês
     const { data: contas } = await db.from('contas').select('valor, status, data_vencimento')
