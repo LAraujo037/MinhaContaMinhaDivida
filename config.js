@@ -4,13 +4,13 @@
 
 const CONFIG = {
   // ⚠️  SUBSTITUA pelos seus dados do Supabase
-  SUPABASE_URL: 'https://SEU_PROJECT_ID.supabase.co',
-  SUPABASE_ANON_KEY: 'SUA_ANON_KEY_AQUI',
+  SUPABASE_URL: 'https://irvjmgxflpebxwynhqce.supabase.co',
+  SUPABASE_ANON_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlydmptZ3hmbHBlYnh3eW5ocWNlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzcxOTEwMzUsImV4cCI6MjA5Mjc2NzAzNX0.jmDFem_GK696EDDzeLnc_u-eXDeY_z8FHwCGNTHv2zg',
 
   // Apenas estes e-mails podem acessar o sistema
   ALLOWED_EMAILS: [
-    'usuario1@email.com',
-    'usuario2@email.com'
+    'zero37@hotmail.com',
+    'anapaulamoreiradh19@gmail.com'
   ]
 };
 
