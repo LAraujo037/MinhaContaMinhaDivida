@@ -155,8 +155,7 @@ const DB = {
       if (anoMes) {
         const [ano, mes] = anoMes.split('-');
         const inicio = `${ano}-${mes}-01`;
-        const fim = `${ano}-${mes}-31`;
-        // Filtra por parcelas que caem neste mês
+        const fim = `${ano}-${mes}-${ultimoDiaMes(ano, mes)}`;
         q = q.gte('data_primeira_parcela', inicio).lte('data_primeira_parcela', fim);
       }
       const { data, error } = await q;
