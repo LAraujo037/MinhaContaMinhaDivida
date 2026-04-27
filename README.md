@@ -1,92 +1,120 @@
 # 💰 FinançasPro — Sistema de Gestão Financeira Pessoal
 
-Sistema web completo para controle financeiro pessoal, com suporte a dois usuários.
-Desenvolvido em HTML + CSS + JavaScript puro, com Supabase como backend.
-
----
-
-## 📁 Estrutura de Arquivos
-
-```
-financas/
-├── index.html              ← Arquivo principal (abrir este)
-├── css/
-│   └── style.css           ← Estilos completos (dark/light mode)
-├── js/
-│   ├── config.js           ← ⚠️ CONFIGURE AQUI: URL e chave do Supabase
-│   ├── utils.js            ← Utilitários de UI e formatação
-│   ├── db-models.js        ← Todas as operações de banco de dados
-│   └── pages.js            ← Renderização de páginas
-└── supabase-migration.sql  ← Execute no Supabase SQL Editor
-```
-
----
-
-## 🚀 Configuração (Passo a Passo)
-
-### 1. Criar projeto no Supabase
-1. Acesse [supabase.com](https://supabase.com) e crie uma conta gratuita
-2. Clique em **New Project** e configure
-3. Anote o **Project URL** e a **anon public key** (Settings → API)
-
-### 2. Criar as tabelas
-1. No painel do Supabase, vá em **SQL Editor**
-2. Cole o conteúdo de `supabase-migration.sql` e execute
-3. Todas as tabelas e políticas de segurança serão criadas
-
-### 3. Criar os usuários autorizados
-1. No Supabase, vá em **Authentication → Users**
-2. Clique em **Add user** e crie os dois usuários:
-   - `usuario1@email.com` + senha
-   - `usuario2@email.com` + senha
-
-### 4. Configurar o sistema
-Abra `js/config.js` e substitua:
-
-```javascript
-const CONFIG = {
-  SUPABASE_URL: 'https://SEU_PROJECT_ID.supabase.co',  // ← sua URL
-  SUPABASE_ANON_KEY: 'SUA_ANON_KEY_AQUI',              // ← sua chave
-
-  ALLOWED_EMAILS: [
-    'seu_email@gmail.com',     // ← e-mail do usuário 1
-    'email_parceiro@gmail.com' // ← e-mail do usuário 2
-  ]
-};
-```
-
-### 5. Publicar no GitHub Pages
-1. Crie um repositório no GitHub (pode ser privado)
-2. Faça upload de todos os arquivos
-3. Vá em **Settings → Pages** e ative o GitHub Pages
-4. Pronto! O sistema estará disponível em `https://seu-usuario.github.io/nome-repo`
+Sistema web completo para controle financeiro pessoal de duas pessoas, com sincronização em tempo real via Supabase.
 
 ---
 
 ## ✨ Funcionalidades
 
-| Módulo | Funcionalidades |
-|--------|----------------|
-| **Visão Geral** | Resumo do mês: a pagar, pago, cartões, empréstimos, VR |
-| **Contas a Pagar** | Cadastro, filtros por mês/status, marcar como pago, exportar CSV |
-| **Contas Fixas** | Recorrência mensal automática, pausar/ativar |
-| **Cartões** | Múltiplos cartões, compras parceladas, visualização de fatura |
-| **Empréstimos** | Parcelas geradas automaticamente, progresso de quitação |
-| **Vale Refeição** | Saldo separado, créditos, débitos, histórico |
+| Módulo | Descrição |
+|--------|-----------|
+| 🏠 **Visão Geral** | Resumo do mês, saldo, alertas, cards configuráveis com olhinho e blur |
+| 📋 **Contas a Pagar** | Cadastro, filtros, status automático (pago/pendente/atrasado), CSV |
+| 🔄 **Contas Fixas** | Recorrências mensais que viram lançamentos automaticamente |
+| 💳 **Cartões** | Múltiplos cartões com limite, faturas por mês, compras parceladas |
+| 🏦 **Empréstimos** | Parcelas com progresso, dono (Meu/Outro com nome), filtros |
+| 💵 **Receitas** | Salário, adiantamento, pensão e Loja Enjoei. Recorrências fixas |
+| 🍽️ **Vale Refeição** | Saldo separado, créditos e débitos, histórico |
+| 🎯 **Orçamento** | Limites mensais por categoria com barras de progresso |
+| 🚀 **Metas** | Objetivos financeiros com progresso e contribuições |
+| ⚙️ **Configurações** | Backup JSON, importar, exportar CSV, perfil |
+| 🛡️ **Admin** | Cor de destaque do sistema, módulos visíveis, zona de risco |
 
-## 🎨 Extras
-- ☀️/🌙 Dark mode / Light mode
-- 📱 Responsivo para celular
-- ⬇️ Exportação CSV (contas e VR)
-- ⚠️ Alertas de contas atrasadas
-- 🔐 Acesso restrito a 2 e-mails
+### Extras
+- 🌙/☀️ Dark/Light mode
+- 📱 Responsivo (funciona no celular)
+- 👁 Olhinho global e por card (borra valores)
+- ⚙ Painel para mostrar/ocultar cards
+- ↕️ Drag-and-drop na sidebar (admin reorganiza menu)
+- 🔄 Sincronização em tempo real entre os 2 dispositivos
+- 🎨 Tema futurista com gradientes ciano/violeta
 
 ---
 
-## ⚠️ Segurança
+## 📁 Estrutura
 
-O sistema usa duas camadas de proteção:
-1. **Frontend**: Verifica se o e-mail está na lista `ALLOWED_EMAILS` antes de fazer login
-2. **Supabase RLS**: Row Level Security ativa em todas as tabelas — apenas usuários autenticados acessam os dados
+```
+financas/
+├── index.html                    ← Página principal
+├── README.md                     ← Este arquivo
+├── supabase-migration.sql        ← Execute no SQL Editor do Supabase
+├── css/
+│   └── style.css                 ← Tema futurista completo
+└── js/
+    ├── config.js                 ← ⚠️ CONFIGURE AQUI: Supabase + e-mails
+    ├── supabase-adapter.js       ← Camada de persistência
+    └── app.js                    ← Toda a lógica do app
+```
 
-> **Nota**: Para segurança máxima em produção, considere adicionar uma Edge Function no Supabase para validar os e-mails permitidos no servidor.
+---
+
+## 🚀 Setup (5 minutos)
+
+### 1. Criar projeto Supabase
+1. Acesse [supabase.com](https://supabase.com) → **New Project**
+2. Defina nome, senha do banco, região (recomendo São Paulo)
+3. Aguarde 2 min para o projeto ficar pronto
+
+### 2. Criar tabela
+1. **SQL Editor** → **New query**
+2. Cole o conteúdo de `supabase-migration.sql`
+3. Clique em **Run**
+
+### 3. Habilitar Realtime
+1. **Database** → **Replication**
+2. Encontre a tabela `appdata` e clique para habilitar
+
+### 4. Criar os 2 usuários
+1. **Authentication** → **Users** → **Add user**
+2. Crie 2 usuários (você + sua esposa) com senhas
+
+### 5. Configurar o app
+Abra `js/config.js` e edite:
+
+```javascript
+const CONFIG = {
+  SUPABASE_URL: 'https://abcdefg.supabase.co',  // Project Settings → API
+  SUPABASE_ANON_KEY: 'eyJhbG...',                // Project Settings → API
+  ALLOWED_EMAILS: [
+    'voce@email.com',
+    'esposa@email.com'
+  ],
+  ADMIN_EMAIL: 'voce@email.com'  // Quem acessa o painel admin
+};
+```
+
+### 6. Publicar no GitHub Pages
+1. Crie um repositório no GitHub (pode ser privado)
+2. Faça upload dos arquivos
+3. **Settings** → **Pages** → Source: `main` branch → **Save**
+4. Aguarde ~1 min e acesse `https://seu-usuario.github.io/nome-repo`
+
+---
+
+## 🔐 Segurança
+
+- **Whitelist de e-mails** — apenas os e-mails em `ALLOWED_EMAILS` conseguem fazer login
+- **Row Level Security** — Supabase bloqueia qualquer acesso sem autenticação
+- **Admin restrito** — apenas `ADMIN_EMAIL` vê o painel de configuração
+- **Cache local** — funciona offline e sincroniza ao reconectar
+
+---
+
+## 💡 Notas técnicas
+
+- **Schema JSONB** — todos os dados financeiros ficam em um único registro JSONB compartilhado entre os 2 usuários. Simples, flexível, fácil de evoluir.
+- **Realtime** — quando um usuário salva algo, o outro vê na hora (sem precisar atualizar)
+- **Debounce de 800ms** — múltiplas edições são agrupadas para reduzir requests
+- **Cache local** — primeira renderização é instantânea via localStorage
+
+Para volumes maiores (>1000 transações/mês), considere dividir em tabelas relacionais.
+
+---
+
+## 🆘 Problemas comuns
+
+**"Acesso não autorizado"** → e-mail não está em `ALLOWED_EMAILS`
+
+**Dados não aparecem** → verifique se a tabela `appdata` foi criada e tem RLS habilitado
+
+**Não sincroniza entre dispositivos** → habilite Realtime em Database → Replication
