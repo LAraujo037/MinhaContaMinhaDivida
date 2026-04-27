@@ -540,4 +540,23 @@ html { scroll-behavior: smooth; -webkit-overflow-scrolling: touch; }
     padding-bottom: env(safe-area-inset-bottom);
   }
 }
+
+/* ── CORREÇÕES DE LAYOUT MOBILE ─────────────────────────────── */
+@media(max-width:768px){
+  /* Título compacto — não quebra linha */
+  .mhdr-l h2{font-size:1.05rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:calc(100vw - 140px)}
+  .mhdr-l h2::before{width:6px;height:6px}
+  /* Esconde subtítulo — economiza espaço vertical */
+  .mhdr-l p{display:none}
+  /* Header com menos padding */
+  .mhdr{padding:10px 14px 0;gap:6px}
+  /* Cards mais compactos */
+  .sc{padding:12px 12px}
+  .sc .lbl{font-size:.58rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .sc .val{font-size:1.2rem}
+  .sc .sub{font-size:.62rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  /* Grid de cards: mínimo menor para caber melhor */
+  .sc-grid{grid-template-columns:repeat(2,1fr);gap:8px}
+  /* Conteúdo com menos padding lateral */
+  .mcontent{padding:12px 14px 28px}
 }
