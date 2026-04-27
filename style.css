@@ -495,16 +495,25 @@ select option{background:var(--bg2)}
 #mob-hdr h2 em{color:var(--acc);font-style:normal}
 #overlay-mob{display:none;position:absolute;inset:0;background:rgba(0,0,0,.5);z-index:99}
 @media(max-width:768px){
+  /* Layout mobile: coluna em vez de linha — resolve a barra preta lateral */
+  #app-shell{flex-direction:column;overflow-x:hidden}
+  #mob-hdr{display:flex;width:100%;flex-shrink:0;height:52px}
+  #main{flex:1;min-height:0;width:100%}
+  /* Sidebar sobreposta (fixed) — fora do fluxo */
   #sidebar{display:none;position:fixed;left:0;top:0;bottom:0;width:var(--sw);min-width:var(--sw);z-index:100;height:100%;overflow-y:auto}
   #sidebar.open{display:flex;box-shadow:4px 0 30px rgba(0,0,0,.4)}
   #overlay-mob.open{display:block}
-  #main{width:100%}
-  #mob-hdr{display:flex}
-  .mhdr{padding:16px 18px 0}
-  .mcontent{padding:14px 18px 24px}
-  .sc-grid{grid-template-columns:repeat(2,1fr)}
+  .mhdr{padding:10px 14px 0}
+  .mcontent{padding:12px 14px 28px}
+  .sc-grid{grid-template-columns:repeat(2,1fr);gap:8px}
   .fgrid{grid-template-columns:1fr}
   th,td{padding:9px 10px;font-size:.75rem}
+  .mhdr-l h2{font-size:1.05rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:calc(100vw - 140px)}
+  .mhdr-l p{display:none}
+  .sc{padding:12px 12px}
+  .sc .lbl{font-size:.58rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .sc .val{font-size:1.2rem}
+  .sc .sub{font-size:.62rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 }
 
 /* ── PWA / MOBILE APP ───────────────────────────────────────── */
@@ -541,22 +550,3 @@ html { scroll-behavior: smooth; -webkit-overflow-scrolling: touch; }
   }
 }
 
-/* ── CORREÇÕES DE LAYOUT MOBILE ─────────────────────────────── */
-@media(max-width:768px){
-  /* Título compacto — não quebra linha */
-  .mhdr-l h2{font-size:1.05rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:calc(100vw - 140px)}
-  .mhdr-l h2::before{width:6px;height:6px}
-  /* Esconde subtítulo — economiza espaço vertical */
-  .mhdr-l p{display:none}
-  /* Header com menos padding */
-  .mhdr{padding:10px 14px 0;gap:6px}
-  /* Cards mais compactos */
-  .sc{padding:12px 12px}
-  .sc .lbl{font-size:.58rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-  .sc .val{font-size:1.2rem}
-  .sc .sub{font-size:.62rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-  /* Grid de cards: mínimo menor para caber melhor */
-  .sc-grid{grid-template-columns:repeat(2,1fr);gap:8px}
-  /* Conteúdo com menos padding lateral */
-  .mcontent{padding:12px 14px 28px}
-}
