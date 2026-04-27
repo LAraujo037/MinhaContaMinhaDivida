@@ -506,3 +506,38 @@ select option{background:var(--bg2)}
   .fgrid{grid-template-columns:1fr}
   th,td{padding:9px 10px;font-size:.75rem}
 }
+
+/* ── PWA / MOBILE APP ───────────────────────────────────────── */
+/* Impede zoom ao focar input no iOS */
+input, select, textarea { font-size: 16px !important; }
+
+/* Safe areas para notch e barra home do iPhone */
+#app-shell {
+  padding-top: env(safe-area-inset-top);
+  padding-bottom: env(safe-area-inset-bottom);
+}
+#sidebar {
+  padding-bottom: calc(16px + env(safe-area-inset-bottom));
+}
+#mob-hdr {
+  padding-top: env(safe-area-inset-top);
+  height: calc(52px + env(safe-area-inset-top));
+}
+
+/* Remove highlight azul ao tocar em botões no mobile */
+* { -webkit-tap-highlight-color: transparent; }
+
+/* Scroll suave nativo */
+html { scroll-behavior: smooth; -webkit-overflow-scrolling: touch; }
+
+/* Área de conteúdo com padding extra no iOS standalone */
+@media (display-mode: standalone) {
+  #mob-hdr {
+    padding-top: env(safe-area-inset-top);
+    height: calc(52px + env(safe-area-inset-top));
+  }
+  #main {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+}
+}

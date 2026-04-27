@@ -3,19 +3,15 @@
 // ════════════════════════════════════════════════════════════
 
 const CONFIG = {
-  // ⚠️  SUBSTITUA pelos seus dados do Supabase
-  // Encontre em: Project Settings → API
-  SUPABASE_URL: 'https://SEU_PROJECT_ID.supabase.co',
-  SUPABASE_ANON_KEY: 'SUA_ANON_KEY_AQUI',
+  SUPABASE_URL: 'https://rbfrzjbcetgdmhvbszrd.supabase.co',
+  SUPABASE_ANON_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJiZnJ6amJjZXRnZG1odmJzenJkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzcyNDg0NTYsImV4cCI6MjA5MjgyNDQ1Nn0.DgvF9phY54TeaHL6xPo1O63VUYGLNwtU-gsrMUzkj-Y',
 
-  // ⚠️  Apenas estes e-mails podem acessar o sistema
   ALLOWED_EMAILS: [
-    'usuario1@email.com',
-    'usuario2@email.com'
+    'zero37@hotmail.com',
+    'anapaulamoreiradh19@gmail.com'
   ],
 
-  // ⚠️  Apenas este e-mail tem acesso ao painel admin
-  ADMIN_EMAIL: 'usuario1@email.com'
+  ADMIN_EMAIL: 'zero37@hotmail.com'
 };
 
 // Inicializa cliente Supabase via CDN

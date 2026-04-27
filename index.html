@@ -2,8 +2,16 @@
 <html lang="pt-BR" data-theme="dark">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>FinançasPro — Gestão Financeira</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Minha Conta Minha Dívida</title>
+<meta name="description" content="Gestão financeira do casal">
+<meta name="theme-color" content="#070912">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="MinhasConta">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-192.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="style.css">
@@ -357,6 +365,35 @@
 <script src="config.js"></script>
 <script src="supabase-adapter.js"></script>
 <script src="app.js"></script>
+
+<!-- PWA: botão de instalar -->
+<button id="btn-install" style="display:none;position:fixed;bottom:calc(20px + env(safe-area-inset-bottom));right:16px;z-index:9998;background:var(--grad-1);color:#fff;border:none;border-radius:50px;padding:10px 18px;font-size:.78rem;font-weight:600;font-family:'DM Sans',sans-serif;cursor:pointer;box-shadow:0 4px 20px rgba(34,211,238,.4);letter-spacing:.03em">
+  ⬇ Instalar App
+</button>
+
+<script>
+  // Service Worker
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('./sw.js').catch(() => {});
+  }
+  // Botão de instalar (Android/Desktop)
+  let _deferredPrompt;
+  window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();
+    _deferredPrompt = e;
+    document.getElementById('btn-install').style.display = 'block';
+  });
+  document.getElementById('btn-install').addEventListener('click', async () => {
+    if (!_deferredPrompt) return;
+    _deferredPrompt.prompt();
+    const { outcome } = await _deferredPrompt.userChoice;
+    if (outcome === 'accepted') document.getElementById('btn-install').style.display = 'none';
+    _deferredPrompt = null;
+  });
+  window.addEventListener('appinstalled', () => {
+    document.getElementById('btn-install').style.display = 'none';
+  });
+</script>
 
 </body>
 </html>
