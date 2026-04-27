@@ -64,6 +64,16 @@ async function doLogin(){
     go('overview');
     setTimeout(updateSaldoBar,100);
     toast('Bem-vindo ao FinançasPro! 🎉','g');
+    // Oferecer digital se disponível e ainda não ativada
+    const bioAvail = await isBiometricAvailable().catch(()=>false);
+    if (bioAvail && !isBiometricEnabled()) {
+      setTimeout(async () => {
+        if (confirm('Ativar desbloqueio por digital?\n\nPróximos acessos serão feitos com a digital, sem precisar digitar senha.')) {
+          const ok = await enableBiometric(email);
+          toast(ok ? 'Digital ativada! ✅ Próximo acesso será por digital.' : 'Não foi possível ativar a digital.', ok?'g':'r');
+        }
+      }, 1200);
+    }
     // Realtime sync entre dispositivos
     subscribeRealtime(() => {
       applyUserTheme();
@@ -1690,6 +1700,100 @@ function apagarTudo(){
 }
 
 // ══════════════════════════════════════════════════
+//  BIOMETRIC AUTH (WebAuthn)
+// ══════════════════════════════════════════════════
+async function isBiometricAvailable() {
+  return !!(window.PublicKeyCredential &&
+    await PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable().catch(()=>false));
+}
+
+function isBiometricEnabled() {
+  return localStorage.getItem('bio_enabled')==='1' && !!localStorage.getItem('bio_cred_id');
+}
+
+async function enableBiometric(email) {
+  try {
+    const challenge = crypto.getRandomValues(new Uint8Array(32));
+    const cred = await navigator.credentials.create({
+      publicKey: {
+        challenge,
+        rp: { name: 'Minha Conta Minha Dívida', id: location.hostname },
+        user: { id: new TextEncoder().encode(email), name: email, displayName: email.split('@')[0] },
+        pubKeyCredParams: [{ type:'public-key', alg:-7 }, { type:'public-key', alg:-257 }],
+        authenticatorSelection: { authenticatorAttachment:'platform', userVerification:'required' },
+        timeout: 60000
+      }
+    });
+    const credId = btoa(String.fromCharCode(...new Uint8Array(cred.rawId)));
+    localStorage.setItem('bio_cred_id', credId);
+    localStorage.setItem('bio_email', email);
+    localStorage.setItem('bio_enabled', '1');
+    return true;
+  } catch(e) { return false; }
+}
+
+async function verifyBiometric() {
+  const credIdStr = localStorage.getItem('bio_cred_id');
+  if (!credIdStr) return false;
+  try {
+    const credId = Uint8Array.from(atob(credIdStr), c=>c.charCodeAt(0));
+    const challenge = crypto.getRandomValues(new Uint8Array(32));
+    await navigator.credentials.get({
+      publicKey: {
+        challenge,
+        rpId: location.hostname,
+        allowCredentials: [{ type:'public-key', id:credId }],
+        userVerification: 'required',
+        timeout: 60000
+      }
+    });
+    return true;
+  } catch(e) { return false; }
+}
+
+function showLoginForm() {
+  document.getElementById('bio-lock-screen').style.display = 'none';
+  document.getElementById('auth-login-form').style.display = 'block';
+}
+
+async function doBiometricUnlock() {
+  const btn = document.getElementById('btn-bio-unlock');
+  if (btn) { btn.disabled=true; btn.textContent='⏳ Verificando...'; }
+  try {
+    const passed = await verifyBiometric();
+    if (!passed) throw new Error('cancelada');
+    const { data:{ user } } = await sb.auth.getUser();
+    if (!user) throw new Error('expired');
+    await loadStore();
+    document.getElementById('auth').classList.remove('show');
+    document.getElementById('app-shell').classList.add('show');
+    document.getElementById('user-label').textContent = user.email.split('@')[0];
+    const adminBtn = document.getElementById('btn-admin-nav');
+    if (adminBtn) adminBtn.style.display = isAdmin(user.email) ? '' : 'none';
+    applyUserTheme();
+    buildSidebar('overview');
+    go('overview');
+    setTimeout(updateSaldoBar, 100);
+    toast('Desbloqueado 🔓', 'g');
+    subscribeRealtime(() => {
+      applyUserTheme();
+      buildSidebar(currentPage||'overview');
+      const renders={overview:renderOverview,contas:renderContas,fixas:renderFixas,cartoes:renderCartoes,emprestimos:renderEmp,vr:renderVR,receitas:renderReceitas,admin:renderAdmin,orcamento:renderOrcamento,metas:renderMetas,configuracoes:renderConfiguracoes};
+      if(renders[currentPage]) renders[currentPage]();
+      updateSaldoBar();
+    });
+  } catch(e) {
+    if (btn) { btn.disabled=false; btn.textContent='👆 Desbloquear com digital'; }
+    if (e.message==='expired') {
+      showLoginForm();
+      toast('Sessão expirada. Faça login com sua senha.', 'r');
+    } else {
+      toast('Biometria cancelada. Tente de novo ou use a senha.', 'r');
+    }
+  }
+}
+
+// ══════════════════════════════════════════════════
 //  THEME
 // ══════════════════════════════════════════════════
 let darkMode=true;
@@ -1709,28 +1813,36 @@ document.documentElement.setAttribute('data-theme',savedTheme);
 document.getElementById('theme-btn').textContent=darkMode?'☀':'🌙';
 
 (async function init(){
-  // Verifica se já está autenticado no Supabase
   const user = await checkAuth();
   if(user) {
-    await loadStore();
-    document.getElementById('app-shell').classList.add('show');
-    document.getElementById('user-label').textContent=user.email.split('@')[0];
-    const adminBtn=document.getElementById('btn-admin-nav');
-    if(adminBtn) adminBtn.style.display=isAdmin(user.email)?'':'none';
-    applyUserTheme();
-    buildSidebar('overview');
-    go('overview');
-    setTimeout(updateSaldoBar,100);
-    // Realtime sync
-    subscribeRealtime(() => {
+    if (isBiometricEnabled()) {
+      // Mostra tela de bloqueio com digital
+      S = { ...STATE_TEMPLATE };
+      document.getElementById('bio-lock-screen').style.display = 'block';
+      document.getElementById('auth-login-form').style.display = 'none';
+      const nameEl = document.getElementById('bio-lock-name');
+      if (nameEl) nameEl.textContent = user.email.split('@')[0];
+      document.getElementById('auth').classList.add('show');
+      setTimeout(() => doBiometricUnlock(), 600);
+    } else {
+      await loadStore();
+      document.getElementById('app-shell').classList.add('show');
+      document.getElementById('user-label').textContent=user.email.split('@')[0];
+      const adminBtn=document.getElementById('btn-admin-nav');
+      if(adminBtn) adminBtn.style.display=isAdmin(user.email)?'':'none';
       applyUserTheme();
-      buildSidebar(currentPage||'overview');
-      const renders={overview:renderOverview,contas:renderContas,fixas:renderFixas,cartoes:renderCartoes,emprestimos:renderEmp,vr:renderVR,receitas:renderReceitas,admin:renderAdmin,orcamento:renderOrcamento,metas:renderMetas,configuracoes:renderConfiguracoes};
-      if(renders[currentPage]) renders[currentPage]();
-      updateSaldoBar();
-    });
+      buildSidebar('overview');
+      go('overview');
+      setTimeout(updateSaldoBar,100);
+      subscribeRealtime(() => {
+        applyUserTheme();
+        buildSidebar(currentPage||'overview');
+        const renders={overview:renderOverview,contas:renderContas,fixas:renderFixas,cartoes:renderCartoes,emprestimos:renderEmp,vr:renderVR,receitas:renderReceitas,admin:renderAdmin,orcamento:renderOrcamento,metas:renderMetas,configuracoes:renderConfiguracoes};
+        if(renders[currentPage]) renders[currentPage]();
+        updateSaldoBar();
+      });
+    }
   } else {
-    // Carrega apenas a estrutura vazia para não quebrar
     S = { ...STATE_TEMPLATE };
     document.getElementById('auth').classList.add('show');
   }

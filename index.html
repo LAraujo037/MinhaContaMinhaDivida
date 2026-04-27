@@ -30,16 +30,28 @@
       <p>Sistema de gestão financeira pessoal</p>
     </div>
     <div id="auth-err" class="auth-err"></div>
-    <div class="fg" style="margin-bottom:14px">
-      <label>E-mail</label>
-      <input type="email" id="auth-email" placeholder="demo@email.com" value="demo@email.com">
+
+    <!-- Tela de bloqueio biométrico (aparece quando digital está ativa) -->
+    <div id="bio-lock-screen" style="display:none;text-align:center;padding:8px 0 20px">
+      <div style="font-size:3.5rem;margin-bottom:14px">🔒</div>
+      <div id="bio-lock-name" style="font-size:1.1rem;font-weight:700;color:var(--t1);margin-bottom:4px"></div>
+      <div style="font-size:.75rem;color:var(--t3);margin-bottom:28px">Minha Conta Minha Dívida</div>
+      <button class="btn btn-p btn-fw btn-lg" id="btn-bio-unlock" onclick="doBiometricUnlock()">👆 Desbloquear com digital</button>
+      <button onclick="showLoginForm()" style="margin-top:14px;width:100%;background:none;border:none;color:var(--t3);font-size:.75rem;cursor:pointer;padding:6px;font-family:'DM Sans',sans-serif">Usar senha</button>
     </div>
-    <div class="fg" style="margin-bottom:22px">
-      <label>Senha</label>
-      <input type="password" id="auth-pass" placeholder="••••••••" value="demo123">
+
+    <!-- Formulário de login normal -->
+    <div id="auth-login-form">
+      <div class="fg" style="margin-bottom:14px">
+        <label>E-mail</label>
+        <input type="email" id="auth-email" placeholder="seu@email.com">
+      </div>
+      <div class="fg" style="margin-bottom:22px">
+        <label>Senha</label>
+        <input type="password" id="auth-pass" placeholder="••••••••">
+      </div>
+      <button class="btn btn-p btn-fw btn-lg" id="btn-login" onclick="doLogin()">Entrar no sistema</button>
     </div>
-    <button class="btn btn-p btn-fw btn-lg" id="btn-login" onclick="doLogin()">Entrar no sistema</button>
-    <p style="text-align:center;margin-top:16px;font-size:.72rem;color:var(--t3)">Demo: qualquer e-mail + senha funciona</p>
   </div>
 </div>
 
