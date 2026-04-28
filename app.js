@@ -236,16 +236,16 @@ function renderOverview(){
         <button class="card-eye" onclick="event.stopPropagation();toggleBlurCard('receitas')" title="Borrar/mostrar">👁</button>
         <div class="lbl">Receitas</div><div class="val">${fmt(totalReceitas)}</div><div class="sub">${fmtMon(ym)}</div>
         <div style="margin-top:8px;border-top:1px solid var(--b1);padding-top:7px;display:flex;flex-direction:column;gap:4px">
-          <div style="display:flex;justify-content:space-between;font-size:.7rem"><span style="color:var(--t3)">Saldo dia 15</span><span style="font-weight:600;color:${saldo15>=0?'var(--grn)':'var(--red)'}">${fmt(saldo15)}</span></div>
-          <div style="display:flex;justify-content:space-between;font-size:.7rem"><span style="color:var(--t3)">Saldo dia 30</span><span style="font-weight:600;color:${saldo30>=0?'var(--grn)':'var(--red)'}">${fmt(saldo30)}</span></div>
+          <div class="tt-trigger" style="display:flex;justify-content:space-between;font-size:.7rem" onmouseenter="showTT(this,'receitas',15)" onmouseleave="hideTT()" ontouchstart="startTT(event,this,'receitas',15)" ontouchend="cancelTT()"><span style="color:var(--t3)">Saldo dia 15<span class="tt-ic">ℹ</span></span><span style="font-weight:600;color:${saldo15>=0?'var(--grn)':'var(--red)'}">${fmt(saldo15)}</span></div>
+          <div class="tt-trigger" style="display:flex;justify-content:space-between;font-size:.7rem" onmouseenter="showTT(this,'receitas',30)" onmouseleave="hideTT()" ontouchstart="startTT(event,this,'receitas',30)" ontouchend="cancelTT()"><span style="color:var(--t3)">Saldo dia 30<span class="tt-ic">ℹ</span></span><span style="font-weight:600;color:${saldo30>=0?'var(--grn)':'var(--red)'}">${fmt(saldo30)}</span></div>
         </div>
       </div>
       <div class="sc cred" data-card="apagar" style="cursor:pointer" onclick="go('contas')">
         <button class="card-eye" onclick="event.stopPropagation();toggleBlurCard('apagar')" title="Borrar/mostrar">👁</button>
         <div class="lbl">A Pagar</div><div class="val">${fmt(aPagar)}</div><div class="sub">${fmtMon(ym)}</div>
         <div style="margin-top:8px;border-top:1px solid var(--b1);padding-top:7px;display:flex;flex-direction:column;gap:4px">
-          <div style="display:flex;justify-content:space-between;font-size:.7rem"><span style="color:var(--t3)">Dia 15</span><span style="font-weight:600;color:var(--red)">${fmt(totalQ15)}</span></div>
-          <div style="display:flex;justify-content:space-between;font-size:.7rem"><span style="color:var(--t3)">Dia 30</span><span style="font-weight:600;color:var(--red)">${fmt(totalQ30)}</span></div>
+          <div class="tt-trigger" style="display:flex;justify-content:space-between;font-size:.7rem" onmouseenter="showTT(this,'apagar',15)" onmouseleave="hideTT()" ontouchstart="startTT(event,this,'apagar',15)" ontouchend="cancelTT()"><span style="color:var(--t3)">Dia 15<span class="tt-ic">ℹ</span></span><span style="font-weight:600;color:var(--red)">${fmt(totalQ15)}</span></div>
+          <div class="tt-trigger" style="display:flex;justify-content:space-between;font-size:.7rem" onmouseenter="showTT(this,'apagar',30)" onmouseleave="hideTT()" ontouchstart="startTT(event,this,'apagar',30)" ontouchend="cancelTT()"><span style="color:var(--t3)">Dia 30<span class="tt-ic">ℹ</span></span><span style="font-weight:600;color:var(--red)">${fmt(totalQ30)}</span></div>
         </div>
       </div>
       <div class="sc" data-card="pago" style="border-left:3px solid var(--grn);cursor:pointer" onclick="go('contas')">
@@ -285,6 +285,99 @@ function rbar(lbl,val,total,cls){
   const p=total>0?Math.min(100,val/total*100):0;
   return `<div style="margin-bottom:18px"><div class="flex-between mb3" style="margin-bottom:7px"><span style="font-size:.8rem;color:var(--t2)">${lbl}</span><span class="fw6">${fmt(val)}</span></div><div class="pbar"><div class="pfill ${cls}" style="width:${p}%"></div></div></div>`;
 }
+
+// ── TOOLTIP DETAIL ──
+let _ttTimer=null;
+
+function buildTTHtml(type,q){
+  const ym=curMon();
+  const [ymYear,ymMonth]=ym.split('-').map(Number);
+  const receitasMes=(S.receitas||[]).filter(r=>r.data.startsWith(ym));
+  const contasMes=S.contas.filter(c=>c.data.startsWith(ym));
+  const contasPend=contasMes.filter(c=>c.status!=='pago');
+
+  function empPorQ(quinzena){
+    let v=0;
+    S.emprestimos.forEach(e=>{
+      if((e.dono||'eu')!=='eu') return;
+      const d0=new Date(e.data+'T00:00:00');
+      const idx=(ymYear-d0.getFullYear())*12+(ymMonth-1-d0.getMonth());
+      if(idx>=e.pagas&&idx<e.nparc){
+        const dI=new Date(e.data+'T00:00:00'); dI.setMonth(dI.getMonth()+idx);
+        const ok=quinzena===15?dI.getDate()<=15:dI.getDate()>15;
+        if(ok) v+=e.vparc;
+      }
+    });
+    return v;
+  }
+  function empListQ(quinzena){
+    const list=[];
+    S.emprestimos.forEach(e=>{
+      if((e.dono||'eu')!=='eu') return;
+      const d0=new Date(e.data+'T00:00:00');
+      const idx=(ymYear-d0.getFullYear())*12+(ymMonth-1-d0.getMonth());
+      if(idx>=e.pagas&&idx<e.nparc){
+        const dI=new Date(e.data+'T00:00:00'); dI.setMonth(dI.getMonth()+idx);
+        const ok=quinzena===15?dI.getDate()<=15:dI.getDate()>15;
+        if(ok) list.push({nome:e.nome+' (parcela)',valor:e.vparc});
+      }
+    });
+    return list;
+  }
+
+  const aPagar15c=contasPend.filter(c=>parseInt(c.data.split('-')[2])<=15).reduce((s,c)=>s+c.valor,0);
+  const aPagar30c=contasPend.filter(c=>parseInt(c.data.split('-')[2])>15).reduce((s,c)=>s+c.valor,0);
+  const eq15=empPorQ(15), eq30=empPorQ(30);
+  const totalQ15=aPagar15c+eq15, totalQ30=aPagar30c+eq30;
+  const recQ15=receitasMes.filter(r=>parseInt(r.data.split('-')[2])<=15);
+  const recQ30=receitasMes.filter(r=>parseInt(r.data.split('-')[2])>15);
+  const sumR15=recQ15.reduce((s,r)=>s+r.valor,0);
+  const sumR30=recQ30.reduce((s,r)=>s+r.valor,0);
+  const saldo15=sumR15-totalQ15;
+  const saldo30=saldo15+sumR30-totalQ30;
+
+  function row(nome,valor,cor){
+    return `<div class="tt-row"><span class="tt-name">${nome}</span><span class="tt-val" style="color:${cor}">${fmt(valor)}</span></div>`;
+  }
+
+  if(type==='apagar'){
+    const contas=contasPend.filter(c=>{ const d=parseInt(c.data.split('-')[2]); return q===15?d<=15:d>15; });
+    const emps=empListQ(q);
+    const items=[...contas.map(c=>({nome:c.nome,valor:c.valor})),...emps];
+    const total=items.reduce((s,i)=>s+i.valor,0);
+    if(!items.length) return `<div class="tt-hdr">Dia ${q} — A Pagar</div><div style="color:var(--t3)">Nenhuma conta neste período.</div>`;
+    return `<div class="tt-hdr">Dia ${q} — A Pagar</div>${items.map(i=>row(i.nome,i.valor,'var(--red)')).join('')}<div class="tt-total"><span>Total</span><span style="color:var(--red)">${fmt(total)}</span></div>`;
+  }
+
+  if(type==='receitas'&&q===15){
+    if(!recQ15.length&&!totalQ15) return `<div class="tt-hdr">Saldo Dia 15</div><div style="color:var(--t3)">Sem movimentação neste período.</div>`;
+    return `<div class="tt-hdr">Saldo Dia 15</div>${recQ15.map(r=>row(r.nome,r.valor,'var(--grn)')).join('')}${row('A pagar dia 15',totalQ15,'var(--red)')}<div class="tt-total"><span>Saldo</span><span style="color:${saldo15>=0?'var(--grn)':'var(--red)'}">${fmt(saldo15)}</span></div>`;
+  }
+
+  if(type==='receitas'&&q===30){
+    return `<div class="tt-hdr">Saldo Dia 30 (acumulado)</div>${row('Saldo dia 15',saldo15,saldo15>=0?'var(--grn)':'var(--red)')}${recQ30.map(r=>row(r.nome,r.valor,'var(--grn)')).join('')}${row('A pagar dia 30',totalQ30,'var(--red)')}<div class="tt-total"><span>Saldo final</span><span style="color:${saldo30>=0?'var(--grn)':'var(--red)'}">${fmt(saldo30)}</span></div>`;
+  }
+  return '';
+}
+
+function showTT(el,type,q){
+  const panel=document.getElementById('tt-panel');
+  panel.innerHTML=buildTTHtml(type,q);
+  const rect=el.getBoundingClientRect();
+  let left=rect.left, top=rect.bottom+6;
+  panel.style.left=left+'px'; panel.style.top=top+'px';
+  panel.classList.add('show');
+  requestAnimationFrame(()=>{
+    const pw=panel.offsetWidth, ph=panel.offsetHeight;
+    if(left+pw>window.innerWidth-8) left=window.innerWidth-pw-8;
+    if(left<8) left=8;
+    if(top+ph>window.innerHeight-8) top=rect.top-ph-6;
+    panel.style.left=left+'px'; panel.style.top=top+'px';
+  });
+}
+function hideTT(){ document.getElementById('tt-panel').classList.remove('show'); }
+function startTT(e,el,type,q){ cancelTT(); _ttTimer=setTimeout(()=>{ e.preventDefault(); showTT(el,type,q); document.addEventListener('touchstart',hideTT,{once:true,passive:true}); },500); }
+function cancelTT(){ if(_ttTimer){clearTimeout(_ttTimer);_ttTimer=null;} }
 function updateBadge(){
   const n=S.contas.filter(c=>calcStatus(c)==='atrasado').length;
   const b=document.getElementById('badge-at');
