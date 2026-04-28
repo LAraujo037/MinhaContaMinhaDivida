@@ -29,6 +29,19 @@ function confirm2(msg){ return confirm(msg); }
 function isAdmin(email){ return (email||'').toLowerCase() === (CONFIG.ADMIN_EMAIL||'').toLowerCase(); }
 function vrEnabled(){ return S.adminCfg?.vrEnabled !== false; }
 function moduloVisivel(sec){ return S.adminCfg?.modulosVisiveis?.[sec] !== false; }
+function getUserRole(email){
+  const e=(email||'').toLowerCase();
+  if(e===(CONFIG.ADMIN_EMAIL||'').toLowerCase()) return 'admin';
+  return (S.adminCfg?.permissoes||{})[e]||'editor';
+}
+function canEdit(){ return getUserRole(S.user)!=='viewer'; }
+function applyRoleCSS(){
+  let el=document.getElementById('role-css');
+  if(!el){ el=document.createElement('style'); el.id='role-css'; document.head.appendChild(el); }
+  el.textContent=getUserRole(S.user)==='viewer'
+    ?`.modal-foot .btn-p,.modal-foot .btn-d,.card-hdr .btn-p,.card-hdr .btn-d,.card-hdr .btn-s{display:none!important}`
+    :'';
+}
 
 function applyUserTheme(){
   const hex = S.adminCfg?.accentColor || '#4f8ef7';
@@ -63,6 +76,7 @@ async function doLogin(){
     buildSidebar('overview');
     history.replaceState({page:'overview'}, '', '#overview');
     go('overview', null, true);
+    applyRoleCSS();
     setTimeout(updateSaldoBar,100);
     toast('Bem-vindo! 👋','g');
     // Oferecer digital se disponível e ainda não ativada
@@ -591,6 +605,7 @@ function openModalConta(id=null){
 }
 function editConta(id){ openModalConta(id); }
 function saveConta(){
+  if(!canEdit()){ toast('Sem permissão de edição.','r'); return; }
   const id=document.getElementById('fc-id').value;
   const nome=document.getElementById('fc-nome').value.trim();
   const valor=parseFloat(document.getElementById('fc-valor').value);
@@ -612,6 +627,7 @@ function pagarConta(id){
   saveStore(); loadContasTable(); updateBadge(); updateSaldoBar(); toast('Marcado como pago!','g');
 }
 function delConta(id){
+  if(!canEdit()){ toast('Sem permissão de edição.','r'); return; }
   if(!confirm2('Excluir esta conta?')) return;
   S.contas=S.contas.filter(x=>x.id!==id);
   saveStore(); loadContasTable(); updateBadge(); toast('Conta excluída.','b');
@@ -665,6 +681,7 @@ function openModalFixa(id=null){
 }
 function editFixa(id){ openModalFixa(id); }
 function saveFixa(){
+  if(!canEdit()){ toast('Sem permissão de edição.','r'); return; }
   const id=document.getElementById('ff-id').value;
   const nome=document.getElementById('ff-nome').value.trim();
   const valor=parseFloat(document.getElementById('ff-valor').value);
@@ -675,7 +692,7 @@ function saveFixa(){
   saveStore(); closeModal('m-fixa'); loadFixasTable();
 }
 function toggleFixa(id){ const f=S.fixas.find(x=>x.id===id); f.ativa=!f.ativa; saveStore(); loadFixasTable(); toast(f.ativa?'Ativado!':'Pausado.','b'); }
-function delFixa(id){ if(!confirm2('Excluir?')) return; S.fixas=S.fixas.filter(x=>x.id!==id); saveStore(); loadFixasTable(); toast('Removido.','b'); }
+function delFixa(id){ if(!canEdit()){ toast('Sem permissão de edição.','r'); return; } if(!confirm2('Excluir?')) return; S.fixas=S.fixas.filter(x=>x.id!==id); saveStore(); loadFixasTable(); toast('Removido.','b'); }
 
 // ══════════════════════════════════════════════════
 //  CARTÕES
@@ -751,6 +768,7 @@ function openModalCartao(id=null){
 }
 function editCartao(id){ openModalCartao(id); }
 function saveCartao(){
+  if(!canEdit()){ toast('Sem permissão de edição.','r'); return; }
   const id=document.getElementById('fk-id').value;
   const nome=document.getElementById('fk-nome').value.trim();
   const limite=parseFloat(document.getElementById('fk-limite').value);
@@ -761,7 +779,7 @@ function saveCartao(){
   else { S.cartoes.push({id:uid(),nome,limite,fech,venc}); toast('Cartão adicionado!','g'); }
   saveStore(); closeModal('m-cartao'); loadCCList();
 }
-function delCartao(id){ if(!confirm2('Excluir cartão e compras?')) return; S.cartoes=S.cartoes.filter(x=>x.id!==id); S.compras=S.compras.filter(x=>x.cartao!==id); saveStore(); loadCCList(); toast('Removido.','b'); }
+function delCartao(id){ if(!canEdit()){ toast('Sem permissão de edição.','r'); return; } if(!confirm2('Excluir cartão e compras?')) return; S.cartoes=S.cartoes.filter(x=>x.id!==id); S.compras=S.compras.filter(x=>x.cartao!==id); saveStore(); loadCCList(); toast('Removido.','b'); }
 
 function loadCCFatura(){
   const panel=document.getElementById('cc-panel');
@@ -820,6 +838,7 @@ function openModalCompra(){
   openModal('m-compra');
 }
 function saveCompra(){
+  if(!canEdit()){ toast('Sem permissão de edição.','r'); return; }
   const cartao=document.getElementById('fcp-cartao').value;
   const desc=document.getElementById('fcp-desc').value.trim();
   const total=parseFloat(document.getElementById('fcp-valor').value);
@@ -830,7 +849,7 @@ function saveCompra(){
   S.compras.push({id:uid(),cartao,desc,total,parc,data,pparc});
   saveStore(); closeModal('m-compra'); loadCCBuy(); toast('Compra lançada!','g');
 }
-function delCompra(id){ if(!confirm2('Excluir esta compra?')) return; S.compras=S.compras.filter(x=>x.id!==id); saveStore(); loadCCBuy(); toast('Removido.','b'); }
+function delCompra(id){ if(!canEdit()){ toast('Sem permissão de edição.','r'); return; } if(!confirm2('Excluir esta compra?')) return; S.compras=S.compras.filter(x=>x.id!==id); saveStore(); loadCCBuy(); toast('Removido.','b'); }
 
 // ══════════════════════════════════════════════════
 //  EMPRÉSTIMOS
@@ -937,6 +956,7 @@ function openModalEmp(id=null){
 }
 
 function saveEmp(){
+  if(!canEdit()){ toast('Sem permissão de edição.','r'); return; }
   const id=document.getElementById('fe-id').value;
   const nome=document.getElementById('fe-nome').value.trim();
   const nparc=parseInt(document.getElementById('fe-nparc').value);
@@ -958,7 +978,7 @@ function saveEmp(){
   }
   saveStore(); closeModal('m-emp'); loadEmpList();
 }
-function delEmp(id){ if(!confirm2('Excluir empréstimo?')) return; S.emprestimos=S.emprestimos.filter(x=>x.id!==id); saveStore(); loadEmpList(); toast('Removido.','b'); }
+function delEmp(id){ if(!canEdit()){ toast('Sem permissão de edição.','r'); return; } if(!confirm2('Excluir empréstimo?')) return; S.emprestimos=S.emprestimos.filter(x=>x.id!==id); saveStore(); loadEmpList(); toast('Removido.','b'); }
 function verParcelas(id){
   const e=S.emprestimos.find(x=>x.id===id);
   document.getElementById('m-parc-title').textContent=`Parcelas — ${e.nome}`;
@@ -1022,6 +1042,7 @@ function openVR(tipo){
   openModal('m-vr');
 }
 function saveVR(){
+  if(!canEdit()){ toast('Sem permissão de edição.','r'); return; }
   const tipo=document.getElementById('fvr-tipo').value;
   const valor=parseFloat(document.getElementById('fvr-valor').value);
   const desc=document.getElementById('fvr-desc').value.trim();
@@ -1188,6 +1209,7 @@ function openModalReceita(id=null){
 }
 function editReceita(id){ openModalReceita(id); }
 function saveReceita(){
+  if(!canEdit()){ toast('Sem permissão de edição.','r'); return; }
   const id=document.getElementById('fr-id').value;
   const nome=document.getElementById('fr-nome').value.trim();
   const valor=parseFloat(document.getElementById('fr-valor').value);
@@ -1203,6 +1225,7 @@ function saveReceita(){
   saveStore(); closeModal('m-receita'); renderReceitas(); updateSaldoBar();
 }
 function delReceita(id){
+  if(!canEdit()){ toast('Sem permissão de edição.','r'); return; }
   if(!confirm2('Excluir esta receita?')) return;
   S.receitas=(S.receitas||[]).filter(x=>x.id!==id);
   saveStore(); renderReceitas(); updateSaldoBar(); toast('Removida.','b');
@@ -1294,6 +1317,26 @@ function renderAdmin(){
       </div>
     </div>
 
+    <!-- PERMISSÕES -->
+    <div class="admin-section">
+      <div class="admin-section-hdr">
+        <span class="ic">🔐</span>
+        <div><h3>Permissões de Acesso</h3><p>Defina o perfil por e-mail: Admin, Editor ou Visualizador</p></div>
+      </div>
+      <div class="admin-section-body">
+        <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap">
+          <input id="perm-email" placeholder="email@dominio.com" style="flex:1;min-width:180px;background:var(--bg3);border:1px solid var(--b1);border-radius:var(--rs);padding:8px 12px;color:var(--t1);font-size:.82rem;font-family:'DM Sans',sans-serif">
+          <select id="perm-role" style="background:var(--bg3);border:1px solid var(--b1);border-radius:var(--rs);padding:8px 12px;color:var(--t1);font-size:.82rem;font-family:'DM Sans',sans-serif">
+            <option value="editor">✏️ Editor</option>
+            <option value="viewer">👁 Visualizador</option>
+            <option value="admin">👑 Administrador</option>
+          </select>
+          <button class="btn btn-p btn-sm" onclick="addPermissao()">+ Adicionar</button>
+        </div>
+        <div id="perm-list">${renderPermList()}</div>
+      </div>
+    </div>
+
     <!-- DANGER ZONE -->
     <div class="admin-section" style="border-color:var(--redB)">
       <div class="admin-section-hdr" style="background:var(--redD)">
@@ -1318,6 +1361,58 @@ function renderAdmin(){
       </div>
     </div>
   `;
+}
+
+const ROLE_LABEL={admin:'👑 Administrador',editor:'✏️ Editor',viewer:'👁 Visualizador'};
+
+function renderPermList(){
+  if(!S.adminCfg) S.adminCfg={};
+  const perms=S.adminCfg.permissoes||{};
+  const adminEmail=(CONFIG.ADMIN_EMAIL||'').toLowerCase();
+  const sel=(cur)=>['admin','editor','viewer'].map(r=>`<option value="${r}"${cur===r?' selected':''}>${ROLE_LABEL[r]}</option>`).join('');
+  const rows=[`<div class="admin-row">
+    <div class="admin-row-info"><div class="title">${adminEmail}</div><div class="desc">Conta principal — acesso permanente</div></div>
+    <span style="font-size:.75rem;font-weight:600;color:var(--acc)">${ROLE_LABEL.admin}</span>
+  </div>`];
+  const extras=Object.entries(perms).filter(([e])=>e!==adminEmail);
+  extras.forEach(([email,role])=>{
+    rows.push(`<div class="admin-row">
+      <div class="admin-row-info"><div class="title">${email}</div></div>
+      <select style="background:var(--bg3);border:1px solid var(--b1);border-radius:var(--rs);padding:6px 10px;color:var(--t1);font-size:.78rem;font-family:'DM Sans',sans-serif" onchange="updatePermissao('${email}',this.value)">${sel(role)}</select>
+      <button class="btn btn-d btn-sm" style="margin-left:6px" onclick="removePermissao('${email}')">✕</button>
+    </div>`);
+  });
+  if(!extras.length) rows.push(`<div style="font-size:.78rem;color:var(--t3);padding:8px 0">Nenhum usuário adicional configurado.</div>`);
+  return rows.join('');
+}
+
+function addPermissao(){
+  const email=document.getElementById('perm-email').value.trim().toLowerCase();
+  const role=document.getElementById('perm-role').value;
+  if(!email||!email.includes('@')){ toast('E-mail inválido.','r'); return; }
+  if(email===(CONFIG.ADMIN_EMAIL||'').toLowerCase()){ toast('Admin principal não pode ser alterado.','r'); return; }
+  if(!S.adminCfg.permissoes) S.adminCfg.permissoes={};
+  S.adminCfg.permissoes[email]=role;
+  saveStore();
+  document.getElementById('perm-email').value='';
+  document.getElementById('perm-list').innerHTML=renderPermList();
+  toast(`Permissão salva para ${email}.`,'g');
+}
+
+function updatePermissao(email,role){
+  if(!S.adminCfg) S.adminCfg={};
+  if(!S.adminCfg.permissoes) S.adminCfg.permissoes={};
+  S.adminCfg.permissoes[email]=role;
+  saveStore();
+  toast(`Perfil de ${email}: ${ROLE_LABEL[role]}.`,'g');
+}
+
+function removePermissao(email){
+  if(!confirm2(`Remover permissão de ${email}?`)) return;
+  delete S.adminCfg.permissoes[email];
+  saveStore();
+  document.getElementById('perm-list').innerHTML=renderPermList();
+  toast('Removido.','b');
 }
 
 function setAccentColor(hex){
@@ -1425,6 +1520,7 @@ function setCatColor(hex){
   document.querySelectorAll('#fcat-colors .csw').forEach(b=>b.classList.toggle('on',b.dataset.color===hex));
 }
 function saveCat(){
+  if(!canEdit()){ toast('Sem permissão de edição.','r'); return; }
   const id=document.getElementById('fcat-id').value;
   const nome=document.getElementById('fcat-nome').value.trim();
   if(!nome){ toast('Preencha o nome.','r'); return; }
@@ -1435,6 +1531,7 @@ function saveCat(){
   saveStore(); closeModal('m-cat'); renderCategorias();
 }
 function delCat(id){
+  if(!canEdit()){ toast('Sem permissão de edição.','r'); return; }
   if(!confirm2('Excluir esta categoria?')) return;
   S.categorias=(S.categorias||[]).filter(x=>x.id!==id);
   saveStore(); renderCategorias(); toast('Removida.','b');
@@ -1587,6 +1684,7 @@ function setMetaColor(hex){
   document.querySelectorAll('#fmeta-colors .csw').forEach(b=>b.classList.toggle('on',b.dataset.color===hex));
 }
 function saveMeta(){
+  if(!canEdit()){ toast('Sem permissão de edição.','r'); return; }
   const id=document.getElementById('fmeta-id').value;
   const nome=document.getElementById('fmeta-nome').value.trim();
   const alvo=parseFloat(document.getElementById('fmeta-alvo').value);
@@ -1598,6 +1696,7 @@ function saveMeta(){
   saveStore(); closeModal('m-meta'); renderMetas();
 }
 function delMeta(id){
+  if(!canEdit()){ toast('Sem permissão de edição.','r'); return; }
   if(!confirm2('Excluir esta meta?')) return;
   S.metas=(S.metas||[]).filter(x=>x.id!==id);
   saveStore(); renderMetas(); toast('Meta removida.','b');
@@ -1608,6 +1707,7 @@ function openContrib(id){
   openModal('m-contrib');
 }
 function saveContrib(){
+  if(!canEdit()){ toast('Sem permissão de edição.','r'); return; }
   const id=document.getElementById('fcontrib-id').value;
   const val=parseFloat(document.getElementById('fcontrib-valor').value);
   if(!val||val<=0){ toast('Informe um valor válido.','r'); return; }
