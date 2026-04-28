@@ -1,4 +1,4 @@
-const CACHE_NAME = 'mcmd-v3';
+const CACHE_NAME = 'mcmd-v4';
 const ASSETS = [
   './',
   './index.html',
@@ -15,7 +15,11 @@ self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => cache.addAll(ASSETS))
   );
-  self.skipWaiting();
+  // Não chama skipWaiting aqui — aguarda o app sinalizar para ativar
+});
+
+self.addEventListener('message', (event) => {
+  if (event.data === 'SKIP_WAITING') self.skipWaiting();
 });
 
 self.addEventListener('activate', (event) => {
