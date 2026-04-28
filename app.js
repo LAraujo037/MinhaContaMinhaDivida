@@ -61,7 +61,8 @@ async function doLogin(){
     if(adminBtn) adminBtn.style.display=isAdmin(email)?'':'none';
     applyUserTheme();
     buildSidebar('overview');
-    go('overview');
+    history.replaceState({page:'overview'}, '', '#overview');
+    go('overview', null, true);
     setTimeout(updateSaldoBar,100);
     toast('Bem-vindo! 👋','g');
     // Oferecer digital se disponível e ainda não ativada
@@ -110,11 +111,12 @@ const META = {
   configuracoes:{t:'Configurações',s:'Perfil, backup e dados'},
   admin:       {t:'Administração',s:'Permissões e personalização do sistema'},
 };
-function go(page, btn){
+function go(page, btn, _fromHistory){
   if(page==='admin' && !isAdmin(S.user)){ toast('Acesso restrito.','r'); return; }
   if(page==='vr' && !vrEnabled()){ toast('Vale Refeição não está habilitado.','r'); return; }
   if(!['overview','admin','configuracoes','orcamento','metas'].includes(page) && !moduloVisivel(page)){ toast('Este módulo está desabilitado.','r'); return; }
   currentPage=page;
+  if(!_fromHistory) history.pushState({page}, '', '#'+page);
   document.querySelectorAll('.ni').forEach(b=>b.classList.remove('on'));
   if(btn) btn.classList.add('on');
   else { const b=document.querySelector(`.ni[data-page="${page}"]`); if(b) b.classList.add('on'); }
@@ -125,6 +127,10 @@ function go(page, btn){
   const renders={overview:renderOverview,contas:renderContas,fixas:renderFixas,cartoes:renderCartoes,emprestimos:renderEmp,vr:renderVR,receitas:renderReceitas,admin:renderAdmin,orcamento:renderOrcamento,metas:renderMetas,configuracoes:renderConfiguracoes};
   if(renders[page]) renders[page]();
 }
+window.addEventListener('popstate', e=>{
+  const page=e.state?.page||'overview';
+  go(page, null, true);
+});
 
 function toggleSidebar(){ document.getElementById('sidebar').classList.toggle('open'); document.getElementById('overlay-mob').classList.toggle('open'); }
 function closeSidebar(){ document.getElementById('sidebar').classList.remove('open'); document.getElementById('overlay-mob').classList.remove('open'); }
@@ -220,28 +226,28 @@ function renderOverview(){
           <div style="display:flex;justify-content:space-between;font-size:.7rem"><span style="color:var(--t3)">Saldo dia 30</span><span style="font-weight:600;color:${saldo30>=0?'var(--grn)':'var(--red)'}">${fmt(saldo30)}</span></div>
         </div>
       </div>
-      <div class="sc cred" data-card="apagar">
-        <button class="card-eye" onclick="toggleBlurCard('apagar')" title="Borrar/mostrar">👁</button>
+      <div class="sc cred" data-card="apagar" style="cursor:pointer" onclick="go('contas')">
+        <button class="card-eye" onclick="event.stopPropagation();toggleBlurCard('apagar')" title="Borrar/mostrar">👁</button>
         <div class="lbl">A Pagar</div><div class="val">${fmt(aPagar)}</div><div class="sub">${fmtMon(ym)}</div>
         <div style="margin-top:8px;border-top:1px solid var(--b1);padding-top:7px;display:flex;flex-direction:column;gap:4px">
           <div style="display:flex;justify-content:space-between;font-size:.7rem"><span style="color:var(--t3)">Dia 15</span><span style="font-weight:600;color:var(--red)">${fmt(totalQ15)}</span></div>
           <div style="display:flex;justify-content:space-between;font-size:.7rem"><span style="color:var(--t3)">Dia 30</span><span style="font-weight:600;color:var(--red)">${fmt(totalQ30)}</span></div>
         </div>
       </div>
-      <div class="sc" data-card="pago" style="border-left:3px solid var(--grn)">
-        <button class="card-eye" onclick="toggleBlurCard('pago')" title="Borrar/mostrar">👁</button>
+      <div class="sc" data-card="pago" style="border-left:3px solid var(--grn);cursor:pointer" onclick="go('contas')">
+        <button class="card-eye" onclick="event.stopPropagation();toggleBlurCard('pago')" title="Borrar/mostrar">👁</button>
         <div class="lbl">Pago</div><div class="val" style="color:var(--grn)">${fmt(pago)}</div><div class="sub">${fmtMon(ym)}</div>
       </div>
-      <div class="sc cblu" data-card="cartoes">
-        <button class="card-eye" onclick="toggleBlurCard('cartoes')" title="Borrar/mostrar">👁</button>
+      <div class="sc cblu" data-card="cartoes" style="cursor:pointer" onclick="go('cartoes')">
+        <button class="card-eye" onclick="event.stopPropagation();toggleBlurCard('cartoes')" title="Borrar/mostrar">👁</button>
         <div class="lbl">Em Cartões</div><div class="val">${fmt(totalCartao)}</div><div class="sub">Parcelas do mês</div>
       </div>
-      <div class="sc cyel" data-card="emprestimos">
-        <button class="card-eye" onclick="toggleBlurCard('emprestimos')" title="Borrar/mostrar">👁</button>
+      <div class="sc cyel" data-card="emprestimos" style="cursor:pointer" onclick="go('emprestimos')">
+        <button class="card-eye" onclick="event.stopPropagation();toggleBlurCard('emprestimos')" title="Borrar/mostrar">👁</button>
         <div class="lbl">Empréstimos</div><div class="val">${fmt(totalEmp)}</div><div class="sub">Saldo total</div>
       </div>
-      <div class="sc" data-card="vr" style="border-left:3px solid var(--pur)">
-        <button class="card-eye" onclick="toggleBlurCard('vr')" title="Borrar/mostrar">👁</button>
+      <div class="sc" data-card="vr" style="border-left:3px solid var(--pur);cursor:pointer" onclick="go('vr')">
+        <button class="card-eye" onclick="event.stopPropagation();toggleBlurCard('vr')" title="Borrar/mostrar">👁</button>
         <div class="lbl">Saldo VR</div><div class="val" style="color:var(--pur)">${fmt(S.vr.saldo)}</div><div class="sub">Vale Refeição</div>
       </div>
     </div>
