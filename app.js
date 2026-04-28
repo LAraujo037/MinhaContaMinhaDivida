@@ -224,8 +224,8 @@ function renderOverview(){
         <button class="card-eye" onclick="toggleBlurCard('apagar')" title="Borrar/mostrar">👁</button>
         <div class="lbl">A Pagar</div><div class="val">${fmt(aPagar)}</div><div class="sub">${fmtMon(ym)}</div>
         <div style="margin-top:8px;border-top:1px solid var(--b1);padding-top:7px;display:flex;flex-direction:column;gap:4px">
-          <div style="display:flex;justify-content:space-between;font-size:.7rem"><span style="color:var(--t3)">Dia 15</span><span style="font-weight:600">${fmt(totalQ15)}</span></div>
-          <div style="display:flex;justify-content:space-between;font-size:.7rem"><span style="color:var(--t3)">Dia 30</span><span style="font-weight:600">${fmt(totalQ30)}</span></div>
+          <div style="display:flex;justify-content:space-between;font-size:.7rem"><span style="color:var(--t3)">Dia 15</span><span style="font-weight:600;color:var(--red)">${fmt(totalQ15)}</span></div>
+          <div style="display:flex;justify-content:space-between;font-size:.7rem"><span style="color:var(--t3)">Dia 30</span><span style="font-weight:600;color:var(--red)">${fmt(totalQ30)}</span></div>
         </div>
       </div>
       <div class="sc" data-card="pago" style="border-left:3px solid var(--grn)">
