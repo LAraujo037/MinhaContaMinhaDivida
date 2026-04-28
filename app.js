@@ -63,16 +63,11 @@ async function doLogin(){
     buildSidebar('overview');
     go('overview');
     setTimeout(updateSaldoBar,100);
-    toast('Bem-vindo ao FinançasPro! 🎉','g');
+    toast('Bem-vindo! 👋','g');
     // Oferecer digital se disponível e ainda não ativada
     const bioAvail = await isBiometricAvailable().catch(()=>false);
     if (bioAvail && !isBiometricEnabled()) {
-      setTimeout(async () => {
-        if (confirm('Ativar desbloqueio por digital?\n\nPróximos acessos serão feitos com a digital, sem precisar digitar senha.')) {
-          const ok = await enableBiometric(email);
-          toast(ok ? 'Digital ativada! ✅ Próximo acesso será por digital.' : 'Não foi possível ativar a digital.', ok?'g':'r');
-        }
-      }, 1200);
+      setTimeout(() => showBiometricOffer(), 1500);
     }
     // Realtime sync entre dispositivos
     subscribeRealtime(() => {
@@ -162,6 +157,31 @@ function renderOverview(){
   // Emprestimos pendente
   const totalEmp = S.emprestimos.reduce((s,e)=>s+(e.nparc-e.pagas)*e.vparc,0);
 
+  // A Pagar por quinzena: contas + empréstimos "eu"
+  const contasPend = contasMes.filter(c=>c.status!=='pago');
+  const aPagar15c = contasPend.filter(c=>parseInt(c.data.split('-')[2])<=15).reduce((s,c)=>s+c.valor,0);
+  const aPagar30c = contasPend.filter(c=>parseInt(c.data.split('-')[2])>15).reduce((s,c)=>s+c.valor,0);
+
+  let empQ15=0, empQ30=0;
+  const [ymYear,ymMonth]=ym.split('-').map(Number);
+  S.emprestimos.forEach(e=>{
+    if((e.dono||'eu')!=='eu') return;
+    const d0=new Date(e.data+'T00:00:00');
+    const idx=(ymYear-d0.getFullYear())*12+(ymMonth-1-d0.getMonth());
+    if(idx>=e.pagas&&idx<e.nparc){
+      const dInst=new Date(e.data+'T00:00:00'); dInst.setMonth(dInst.getMonth()+idx);
+      if(dInst.getDate()<=15) empQ15+=e.vparc; else empQ30+=e.vparc;
+    }
+  });
+  const totalQ15=aPagar15c+empQ15;
+  const totalQ30=aPagar30c+empQ30;
+
+  // Receitas por quinzena e saldo por quinzena
+  const recQ15=receitasMes.filter(r=>parseInt(r.data.split('-')[2])<=15).reduce((s,r)=>s+r.valor,0);
+  const recQ30=receitasMes.filter(r=>parseInt(r.data.split('-')[2])>15).reduce((s,r)=>s+r.valor,0);
+  const saldo15=recQ15-totalQ15;
+  const saldo30=recQ30-totalQ30;
+
   // Saldo do mês
   const totalDespesas = aPagar + pago + totalCartao;
   const saldoMes = totalReceitas - totalDespesas;
@@ -195,10 +215,18 @@ function renderOverview(){
       <div class="sc cgrn" data-card="receitas" style="cursor:pointer" onclick="go('receitas')">
         <button class="card-eye" onclick="event.stopPropagation();toggleBlurCard('receitas')" title="Borrar/mostrar">👁</button>
         <div class="lbl">Receitas</div><div class="val">${fmt(totalReceitas)}</div><div class="sub">${fmtMon(ym)}</div>
+        <div style="margin-top:8px;border-top:1px solid var(--b1);padding-top:7px;display:flex;flex-direction:column;gap:4px">
+          <div style="display:flex;justify-content:space-between;font-size:.7rem"><span style="color:var(--t3)">Saldo dia 15</span><span style="font-weight:600;color:${saldo15>=0?'var(--grn)':'var(--red)'}">${fmt(saldo15)}</span></div>
+          <div style="display:flex;justify-content:space-between;font-size:.7rem"><span style="color:var(--t3)">Saldo dia 30</span><span style="font-weight:600;color:${saldo30>=0?'var(--grn)':'var(--red)'}">${fmt(saldo30)}</span></div>
+        </div>
       </div>
       <div class="sc cred" data-card="apagar">
         <button class="card-eye" onclick="toggleBlurCard('apagar')" title="Borrar/mostrar">👁</button>
         <div class="lbl">A Pagar</div><div class="val">${fmt(aPagar)}</div><div class="sub">${fmtMon(ym)}</div>
+        <div style="margin-top:8px;border-top:1px solid var(--b1);padding-top:7px;display:flex;flex-direction:column;gap:4px">
+          <div style="display:flex;justify-content:space-between;font-size:.7rem"><span style="color:var(--t3)">Dia 15</span><span style="font-weight:600">${fmt(totalQ15)}</span></div>
+          <div style="display:flex;justify-content:space-between;font-size:.7rem"><span style="color:var(--t3)">Dia 30</span><span style="font-weight:600">${fmt(totalQ30)}</span></div>
+        </div>
       </div>
       <div class="sc" data-card="pago" style="border-left:3px solid var(--grn)">
         <button class="card-eye" onclick="toggleBlurCard('pago')" title="Borrar/mostrar">👁</button>
@@ -1619,6 +1647,17 @@ function renderConfiguracoes(){
           <div class="fg" style="margin-bottom:14px"><label>Nome de exibição</label><input id="cfg-nome" value="${(S.user||'demo').split('@')[0]}" placeholder="Seu nome"></div>
           <button class="btn btn-p btn-sm" onclick="salvarPerfil()">Salvar nome</button>
         </div>
+      </div>
+    </div>
+
+    <!-- Segurança -->
+    <div class="admin-section" style="margin-bottom:16px">
+      <div class="admin-section-hdr"><span class="ic">🔐</span><div><h3>Segurança</h3><p>Desbloqueio biométrico</p></div></div>
+      <div class="admin-section-body" style="padding:0" id="bio-cfg-body">
+        ${isBiometricEnabled()
+          ? `<div class="srow"><div class="srow-info"><div class="stitle">Digital ativada ✅</div><div class="sdesc">O app pede sua digital ao abrir</div></div><button class="btn btn-d btn-sm" onclick="disableBiometric()">Desativar</button></div>`
+          : `<div class="srow"><div class="srow-info"><div class="stitle">Desbloqueio por digital</div><div class="sdesc">Ative para não precisar digitar senha</div></div><button class="btn btn-p btn-sm" id="btn-ativar-bio" onclick="ativarBiometricCfg()">Ativar</button></div>`
+        }
       </div>
     </div>
 
