@@ -200,7 +200,7 @@ function renderOverview(){
   const recQ15=receitasMes.filter(r=>parseInt(r.data.split('-')[2])<=15).reduce((s,r)=>s+r.valor,0);
   const recQ30=receitasMes.filter(r=>parseInt(r.data.split('-')[2])>15).reduce((s,r)=>s+r.valor,0);
   const saldo15=recQ15-totalQ15;
-  const saldo30=recQ30-totalQ30;
+  const saldo30=saldo15+recQ30-totalQ30;
 
   // Saldo do mês
   const totalDespesas = aPagar + pago + totalCartao;
