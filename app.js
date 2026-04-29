@@ -193,8 +193,20 @@ function renderOverview(){
       if(dInst.getDate()<=15) empQ15+=e.vparc; else empQ30+=e.vparc;
     }
   });
-  const totalQ15=aPagar15c+empQ15;
-  const totalQ30=aPagar30c+empQ30;
+
+  // Parcelas cartão por quinzena
+  let cartaoQ15=0, cartaoQ30=0;
+  S.compras.forEach(cp=>{
+    const vpp=cp.total/cp.parc;
+    for(let i=0;i<cp.parc;i++){
+      const d=new Date(cp.pparc+'T00:00:00'); d.setMonth(d.getMonth()+i);
+      const dm=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
+      if(dm===ym){ if(d.getDate()<=15) cartaoQ15+=vpp; else cartaoQ30+=vpp; }
+    }
+  });
+
+  const totalQ15=aPagar15c+empQ15+cartaoQ15;
+  const totalQ30=aPagar30c+empQ30+cartaoQ30;
 
   // Receitas por quinzena e saldo por quinzena
   const recQ15=receitasMes.filter(r=>parseInt(r.data.split('-')[2])<=15).reduce((s,r)=>s+r.valor,0);
@@ -328,7 +340,26 @@ function buildTTHtml(type,q){
   const aPagar15c=contasPend.filter(c=>parseInt(c.data.split('-')[2])<=15).reduce((s,c)=>s+c.valor,0);
   const aPagar30c=contasPend.filter(c=>parseInt(c.data.split('-')[2])>15).reduce((s,c)=>s+c.valor,0);
   const eq15=empPorQ(15), eq30=empPorQ(30);
-  const totalQ15=aPagar15c+eq15, totalQ30=aPagar30c+eq30;
+
+  function cartaoListQ(quinzena){
+    const list=[];
+    S.compras.forEach(cp=>{
+      const vpp=cp.total/cp.parc;
+      for(let i=0;i<cp.parc;i++){
+        const d=new Date(cp.pparc+'T00:00:00'); d.setMonth(d.getMonth()+i);
+        const dm=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
+        if(dm===ym&&(quinzena===15?d.getDate()<=15:d.getDate()>15)){
+          const cartao=S.cartoes.find(k=>k.id===cp.cartao);
+          const parc=cp.parc>1?` (${i+1}/${cp.parc})`:'';
+          list.push({nome:`${cartao?.nome||'Cartão'} — ${cp.desc}${parc}`,valor:vpp});
+        }
+      }
+    });
+    return list;
+  }
+  function cartaoSomQ(quinzena){ return cartaoListQ(quinzena).reduce((s,i)=>s+i.valor,0); }
+
+  const totalQ15=aPagar15c+eq15+cartaoSomQ(15), totalQ30=aPagar30c+eq30+cartaoSomQ(30);
   const recQ15=receitasMes.filter(r=>parseInt(r.data.split('-')[2])<=15);
   const recQ30=receitasMes.filter(r=>parseInt(r.data.split('-')[2])>15);
   const sumR15=recQ15.reduce((s,r)=>s+r.valor,0);
@@ -343,7 +374,8 @@ function buildTTHtml(type,q){
   if(type==='apagar'){
     const contas=contasPend.filter(c=>{ const d=parseInt(c.data.split('-')[2]); return q===15?d<=15:d>15; });
     const emps=empListQ(q);
-    const items=[...contas.map(c=>({nome:c.nome,valor:c.valor})),...emps];
+    const cartoes=cartaoListQ(q);
+    const items=[...contas.map(c=>({nome:c.nome,valor:c.valor})),...emps,...cartoes];
     const total=items.reduce((s,i)=>s+i.valor,0);
     if(!items.length) return `<div class="tt-hdr">Dia ${q} — A Pagar</div><div style="color:var(--t3)">Nenhuma conta neste período.</div>`;
     return `<div class="tt-hdr">Dia ${q} — A Pagar</div>${items.map(i=>row(i.nome,i.valor,'var(--red)')).join('')}<div class="tt-total"><span>Total</span><span style="color:var(--red)">${fmt(total)}</span></div>`;
