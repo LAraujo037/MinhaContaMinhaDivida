@@ -391,35 +391,46 @@
 
 <script>
   // Service Worker com detecção de atualização
+  let _swReg = null;
+
+  function showUpdateBtn() {
+    const btn = document.getElementById('btn-update');
+    if (btn) btn.style.display = 'flex';
+  }
+
+  function applyUpdate() {
+    document.getElementById('btn-update').style.display = 'none';
+    if (_swReg && _swReg.waiting) {
+      _swReg.waiting.postMessage('SKIP_WAITING');
+    }
+  }
+
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('./sw.js').then(reg => {
+      _swReg = reg;
+
+      // SW já estava esperando (ex: usuário recarregou a página)
+      if (reg.waiting) showUpdateBtn();
+
       reg.addEventListener('updatefound', () => {
         const newSW = reg.installing;
         newSW.addEventListener('statechange', () => {
           if (newSW.state === 'installed' && navigator.serviceWorker.controller) {
-            // Nova versão disponível — exibe botão de atualizar
-            const btn = document.getElementById('btn-update');
-            if (btn) btn.style.display = 'flex';
+            showUpdateBtn();
           }
         });
       });
-      // Verifica atualização a cada vez que o app volta ao foco
+
+      // Verifica atualização ao voltar ao foco
       document.addEventListener('visibilitychange', () => {
         if (document.visibilityState === 'visible') reg.update();
       });
     }).catch(() => {});
 
-    // Quando SW novo assumir o controle, recarrega a página
+    // SW novo assumiu controle → recarrega
+    let reloading = false;
     navigator.serviceWorker.addEventListener('controllerchange', () => {
-      window.location.reload();
-    });
-  }
-
-  function applyUpdate() {
-    const btn = document.getElementById('btn-update');
-    if (btn) btn.style.display = 'none';
-    navigator.serviceWorker.ready.then(reg => {
-      if (reg.waiting) reg.waiting.postMessage('SKIP_WAITING');
+      if (!reloading) { reloading = true; window.location.reload(); }
     });
   }
   // Botão de instalar (Android/Desktop)
